@@ -1,0 +1,14 @@
+.git
+.runtime
+.data
+test-results
+backups
+docs/screenshots
+**/node_modules
+
+deploy/.env
+**/*.jks
+**/*.p12
+**/*.pfx
+**/*.pem
+**/*.key

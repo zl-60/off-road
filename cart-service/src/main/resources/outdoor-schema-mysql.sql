@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS cart_lines(user_id VARCHAR(64) NOT NULL,product_id VARCHAR(64) NOT NULL,quantity INT NOT NULL CHECK(quantity>0),PRIMARY KEY(user_id,product_id));

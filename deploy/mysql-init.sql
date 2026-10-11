@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS shanye_user CHARACTER SET utf8mb4;
+CREATE DATABASE IF NOT EXISTS shanye_item CHARACTER SET utf8mb4;
+CREATE DATABASE IF NOT EXISTS shanye_cart CHARACTER SET utf8mb4;
+CREATE DATABASE IF NOT EXISTS shanye_trade CHARACTER SET utf8mb4;
+CREATE DATABASE IF NOT EXISTS shanye_pay CHARACTER SET utf8mb4;
+GRANT ALL PRIVILEGES ON shanye_user.* TO 'shanye'@'%';
+GRANT ALL PRIVILEGES ON shanye_item.* TO 'shanye'@'%';
+GRANT ALL PRIVILEGES ON shanye_cart.* TO 'shanye'@'%';
+GRANT ALL PRIVILEGES ON shanye_trade.* TO 'shanye'@'%';
+GRANT ALL PRIVILEGES ON shanye_pay.* TO 'shanye'@'%';

@@ -1,0 +1,103 @@
+name: shanye
+x-environment: &environment
+  DB_USER: shanye
+  DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in deploy/.env}
+  SCHEMA_LOCATIONS: classpath:outdoor-schema-mysql.sql
+  USER_URL: http://user:8081
+  ITEM_URL: http://item:8082
+  CART_URL: http://cart:8083
+  TRADE_URL: http://trade:8084
+  PAY_URL: http://pay:8085
+  NACOS_SERVER: nacos:8848
+  RABBIT_HOST: rabbit
+  RABBIT_USER: shanye
+  RABBIT_PASSWORD: ${RABBIT_PASSWORD:?Set RABBIT_PASSWORD in deploy/.env}
+  OUTDOOR_TOKEN_SECRET: ${TOKEN_SECRET:?Set TOKEN_SECRET in deploy/.env}
+  OUTDOOR_INTERNAL_KEY: ${INTERNAL_KEY:?Set INTERNAL_KEY in deploy/.env}
+x-service: &service
+  restart: unless-stopped
+  depends_on:
+    mysql: { condition: service_healthy }
+    rabbit: { condition: service_healthy }
+    nacos: { condition: service_started }
+services:
+  mysql:
+    image: mysql:8.0.34
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in deploy/.env}
+      MYSQL_USER: shanye
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in deploy/.env}
+      MYSQL_DATABASE: shanye_user
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init.sql:/docker-entrypoint-initdb.d/01-shanye.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h 127.0.0.1 --silent']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  rabbit:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: shanye
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?Set RABBIT_PASSWORD in deploy/.env}
+    ports: ['127.0.0.1:15672:15672']
+    volumes: [rabbit-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: 'false'
+      JVM_XMS: 128m
+      JVM_XMX: 256m
+      JVM_XMN: 64m
+    ports: ['127.0.0.1:8848:8848']
+  user:
+    <<: *service
+    build: { context: '..', dockerfile: deploy/Dockerfile, args: { MODULE: user-service } }
+    environment:
+      <<: *environment
+      USER_DB_URL: jdbc:mysql://mysql:3306/shanye_user?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+  item:
+    <<: *service
+    build: { context: '..', dockerfile: deploy/Dockerfile, args: { MODULE: item-service } }
+    environment:
+      <<: *environment
+      ITEM_DB_URL: jdbc:mysql://mysql:3306/shanye_item?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+  cart:
+    <<: *service
+    build: { context: '..', dockerfile: deploy/Dockerfile, args: { MODULE: cart-service } }
+    environment:
+      <<: *environment
+      CART_DB_URL: jdbc:mysql://mysql:3306/shanye_cart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+  trade:
+    <<: *service
+    build: { context: '..', dockerfile: deploy/Dockerfile, args: { MODULE: trade-service } }
+    environment:
+      <<: *environment
+      TRADE_DB_URL: jdbc:mysql://mysql:3306/shanye_trade?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+  pay:
+    <<: *service
+    build: { context: '..', dockerfile: deploy/Dockerfile, args: { MODULE: pay-service } }
+    environment:
+      <<: *environment
+      PAY_DB_URL: jdbc:mysql://mysql:3306/shanye_pay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+  gateway:
+    <<: *service
+    build: { context: '..', dockerfile: deploy/Dockerfile, args: { MODULE: hm-gateway } }
+    environment: *environment
+    ports: ['127.0.0.1:8080:8080']
+    depends_on:
+      user: { condition: service_started }
+      item: { condition: service_started }
+      cart: { condition: service_started }
+      trade: { condition: service_started }
+      pay: { condition: service_started }
+volumes:
+  mysql-data:
+  rabbit-data:
